@@ -1,20 +1,18 @@
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <set>
 #include <map>
 using namespace std;
 
-void loadDictionary(vector<string>& v, int length);
-void removeWords(vector<string>& v, char c);
+void loadDictionary(set<string>& v, int length);
 void updateHidden(string&, string);
 
+string processGuess(set<string>& v, char c);
 string maskString(string str, char c);
-string createFamilies(vector<string>& v, char c);
 
 int main() {
 
-	vector<string> wordList;
+	set<string> wordList;
 
 	// asks user for a word length
 	int wordLength;
@@ -32,11 +30,6 @@ int main() {
     	if (!wordList.empty()) break;
     	cout << "No words of length " << wordLength << ". Enter another length: ";
     }
-
-    // prints out list of words for error checking
-	// for (vector<string>::iterator itr = wordList.begin(); itr != wordList.end(); ++itr) {
-	// 	cout << *itr << endl;
-	// }
 
 	// asks user for a guess amount
 	int guessMax;
@@ -76,7 +69,7 @@ int main() {
 		} else if (guessList.count(guess)) {
 			cout << "You already guessed this. Make another guess." << endl;
 		} else {
-			updateHidden(hiddenWord, createFamilies(wordList, guess));
+			updateHidden(hiddenWord, processGuess(wordList, guess));
 			guessList.insert(guess);	
 		}
 		
@@ -95,28 +88,16 @@ int main() {
 };
 
 // loads wordList
-void loadDictionary(vector<string>& list, int wordLength) {
+void loadDictionary(set<string>& list, int wordLength) {
 	string word;
 	ifstream inFile("dictionary.txt");
 	while(!inFile.eof()) {
 		inFile >> word;
 		if (word.length() == wordLength) {
-			list.push_back(word);
+			list.insert(word);
 		}
 	};
 	inFile.close();
-}
-
-// note: when iterating with erase(), increment only for elements that aren't removed.
-void removeWords(vector<string>& v, char c) {
-	int i = 0;
-	while (i < v.size()) {
-		if (v[i].find(c) != string::npos) {
-			v.erase(v.begin() + i);
-		} else {
-			i++;
-		}
-	}
 }
 
 void updateHidden(string& original, string update) {
@@ -139,13 +120,13 @@ string maskString(string str, char c) {
 }
 
 // creates families and checks for the greatest
-string createFamilies(vector<string>& v, char c) {
+string processGuess(set<string>& s, char c) {
 	map<string, int> wordFamilies;
 	int maxValue = 0;
 	string maxKey;
 
 	// generate the families
-	for (vector<string>::iterator itr = v.begin(); itr != v.end(); ++itr) {
+	for (set<string>::iterator itr = s.begin(); itr != s.end(); ++itr) {
 		string maskedStr = maskString(*itr, c);
 		if (wordFamilies.count(maskedStr)) {
 			wordFamilies[maskedStr]++;
@@ -157,26 +138,13 @@ string createFamilies(vector<string>& v, char c) {
 			maxValue = wordFamilies[maskedStr];
 		};
 	}
-	// for (map<string, int>::iterator itr = wordFamilies.begin(); itr != wordFamilies.end(); ++itr) {
-	// 	cout << itr->first << ": " << itr->second << endl;
-	// }
 
-	// identifies which family has the most members
-	// for (map<string, int>::iterator itr = wordFamilies.begin(); itr != wordFamilies.end(); ++itr) {
-	// 	if (itr->second > maxValue) {
-	// 		maxKey = itr->first;
-	// 		maxValue = itr->second;
-	// 	}
-	// }
-	// cout << maxKey << ": " << maxValue << endl;
-
-	// removes all words from other families
-	int i = 0;
-	while (i < v.size()) {
-		if (maskString(v[i], c) != maxKey) {
-			v.erase(v.begin() + i);
+	// remove words from less populated families
+	for (set<string>::iterator itr = s.begin(); itr != s.end();) {
+		if (maskString(*itr, c) != maxKey) {
+			s.erase(itr++); // postincrement passes old position to erase but jumps to newer first
 		} else {
-			i++;
+			++itr;
 		}
 	}
 	return maxKey;
