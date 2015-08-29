@@ -63,6 +63,7 @@ int main() {
 
 		char guess;
 		cout << "Make a guess: ";
+		cin.width(0);
 		cin >> guess;
 		if (!isalpha(guess)) {
 			cout << "Invalid guess. Try again." << endl;
@@ -72,8 +73,12 @@ int main() {
 			updateHidden(hiddenWord, processGuess(wordList, guess));
 			guessList.insert(guess);	
 		}
+		cin.clear();
+		cin.ignore(999, '\n');
 		
+		// if all underscores are gone, word has been guessed
 		if (hiddenWord.find('_') == string::npos) {
+			cout << hiddenWord << endl;
 			cout << "YOU WIN!" << endl;
 			break;
 		}
